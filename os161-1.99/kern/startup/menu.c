@@ -181,6 +181,20 @@ cmd_prog(int nargs, char **args)
 }
 
 /*
+ * Command for enabling DB_THREADS.
+ */
+static
+int
+cmd_dth(int nargs, char **args)
+{
+	(void)args;
+	(void)nargs;
+
+	dbflags = DB_THREADS;
+	return(0);
+}
+
+/*
  * Command for starting the system shell.
  */
 static
@@ -426,6 +440,7 @@ showmenu(const char *name, const char *x[])
 }
 
 static const char *opsmenu[] = {
+	"[dth]     DB_THREADS enable         ",
 	"[s]       Shell                     ",
 	"[p]       Other program             ",
 	"[mount]   Mount a filesystem        ",
@@ -536,6 +551,7 @@ static struct {
 	{ "?t",		cmd_testmenu },
 
 	/* operations */
+	{ "dth",	cmd_dth },
 	{ "s",		cmd_shell },
 	{ "p",		cmd_prog },
 	{ "mount",	cmd_mount },
