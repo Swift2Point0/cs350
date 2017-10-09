@@ -193,16 +193,17 @@ void
 lock_acquire(struct lock *lock)
 {
 	while(1) {
-		spinlock_acquire(lock->lk_lock);
-		if(lock->locked) {
+		spinlock_acquire(&lock->lk_lock);
+		if(lock->lk_locked) {
 			// if somebody has the lock release SL and sleep
-			spinlock_release(lock->lk_lock);
+			wchan_lock(lock->lk_wchan);
+			spinlock_release(&lock->lk_lock);
 			wchan_sleep(lock->lk_wchan);
 		} else {
 			// lock the lock, release SL and break
 			lock->lk_locked = true;
 			lock->lk_holder = curthread;
-			spinlock_release(lock->lk_lock);
+			spinlock_release(&lock->lk_lock);
 			break;
 		}
 
@@ -216,21 +217,19 @@ lock_release(struct lock *lock)
 	KASSERT(lock->lk_holder == curthread);	
 
 
-	spinlock_acquire(lock->lk_lock);
-	lock->locked = false;
+	spinlock_acquire(&lock->lk_lock);
+	lock->lk_locked = false;
 
 	wchan_wakeone(lock->lk_wchan);
-	spinlock_release(lock->lk_lock);
+	spinlock_release(&lock->lk_lock);
 }
 
 bool
 lock_do_i_hold(struct lock *lock)
 {
-        // Write this
+	KASSERT(lock != NULL);
+	return lock->lk_holder == curthread;
 
-        (void)lock;  // suppress warning until code gets written
-
-        return true; // dummy until code gets written
 }
 
 ////////////////////////////////////////////////////////////
