@@ -252,8 +252,16 @@ cv_create(const char *name)
                 kfree(cv);
                 return NULL;
         }
-        
-        // add stuff here as needed
+
+
+	//create a wchan for the CV
+        cv->cv_wchan = wchan_create(cv->cv_name);
+        if (cv->cv_wchan == NULL) {
+                kfree(cv->cv_name);
+                kfree(cv);
+                return NULL;
+        }       
+ 
         
         return cv;
 }
@@ -263,8 +271,7 @@ cv_destroy(struct cv *cv)
 {
         KASSERT(cv != NULL);
 
-        // add stuff here as needed
-        
+        kfree(cv->cv_wchan);
         kfree(cv->cv_name);
         kfree(cv);
 }
@@ -272,23 +279,36 @@ cv_destroy(struct cv *cv)
 void
 cv_wait(struct cv *cv, struct lock *lock)
 {
-        // Write this
-        (void)cv;    // suppress warning until code gets written
-        (void)lock;  // suppress warning until code gets written
+	KASSERT(cv != NULL);
+	KASSERT(lock != NULL);        
+
+	//lock the wchan cuz we gon sleep
+	wchan_lock(cv->cv_wchan);
+	//release lock so other threads can run
+	lock_release(lock);
+	//sleep on the cv wchan (until condition is true)
+	wchan_sleep(cv->cv_wchan);
+	//when we wake up re-acquire lock
+	lock_acquire(lock);
 }
 
 void
 cv_signal(struct cv *cv, struct lock *lock)
 {
-        // Write this
-	(void)cv;    // suppress warning until code gets written
-	(void)lock;  // suppress warning until code gets written
+	KASSERT(cv != NULL);
+        KASSERT(lock != NULL);
+	KASSERT(lock_do_i_hold(lock));
+	
+	//if thead says condition is true and we have the lock then wake one
+	wchan_wakeone(cv->cv_wchan);
 }
-
 void
 cv_broadcast(struct cv *cv, struct lock *lock)
 {
-	// Write this
-	(void)cv;    // suppress warning until code gets written
-	(void)lock;  // suppress warning until code gets written
+        KASSERT(cv != NULL);
+        KASSERT(lock != NULL);
+        KASSERT(lock_do_i_hold(lock));
+        
+        //if thead says condition is true and we have the lock then wake all
+        wchan_wakeall(cv->cv_wchan);
 }
